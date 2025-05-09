@@ -1,0 +1,8 @@
+Samadhith Akampan | samadhithakampan@gmail.com | $2a$10$r7ijS2xHPHYLvJDgj5Wag.rGtjEjU6c66i96GZh/RIGpSq/UON0ma | Jaffna | 234567890
+Website Admin | admin@gmail.com | $2a$10$rMYISwxff.smNhOuMdtr0uoxFAU8/hafewJJ874e6wypQY1PvpvLa | Kurunegala | AD000000
+Samadhith Jayasena | it24100816@my.sliit.lk | $2a$10$3W.dmxhyx77HG9pO/Tevg.3.LWDm8kJKsHwxXBaO4SHo4VLKh0oEq | Kurunegala | IT24100816
+Iman Udaraka | it24104217@my.sliit.lk | $2a$10$pwuSh7HN93LpW6yFY0jowOCiQh3giOHidJgCPcbzqBYWsjQUx0Bta | Galle | IT24104217
+Pasindu Gunasekara | it24104116@my.sliit.lk | $2a$10$ZgNjXtGhDRSaSFzOmnEKheAPKsHNOvKBeQ7AAzNAqeqmYKAwNDIna | Gampaha | IT24104116
+Ayesha Kavindi | it24100658@my.sliit.lk | $2a$10$s7JcKoZS212THbBGRQovcOXH3tw/w2Lmh4J7oIjlVnnO69Wwrqnyq | Jaffna | IT24100658
+Shanuka Umesh | it24103553@my.sliit.lk | $2a$10$KFMXRsVvWJudSsgTWrOhIuXvxtpzMLujl0sXRvuUcmmIRFyxWYOyq | Kurunegala | IT24103553
+Mohommed Shafkhan | it24102308@my.sliit.lk | $2a$10$dqjI4F12aiV1Izadc6mESe4m9msTNVxX1gVq/IiKPNvvfio9oPLye | Colombo | IT24102308

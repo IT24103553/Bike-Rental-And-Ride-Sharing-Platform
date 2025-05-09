@@ -1,0 +1,18 @@
+<component name="ArtifactManager">
+  <artifact type="exploded-war" build-on-make="true" name="Website:war exploded">
+    <output-path>$PROJECT_DIR$/out/artifacts/Website_war_exploded</output-path>
+    <root id="root">
+      <element id="directory" name="WEB-INF">
+        <element id="directory" name="classes">
+          <element id="module-output" name="Website" />
+        </element>
+        <element id="directory" name="lib">
+          <element id="library" level="project" name="Maven: javax.servlet:jstl:1.2" />
+          <element id="library" level="project" name="Maven: com.google.code.gson:gson:2.10.1" />
+          <element id="library" level="project" name="Maven: org.mindrot:jbcrypt:0.4" />
+        </element>
+      </element>
+      <element id="javaee-facet-resources" facet="Website/web/Web" />
+    </root>
+  </artifact>
+</component>

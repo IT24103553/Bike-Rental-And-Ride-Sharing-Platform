@@ -1,0 +1,290 @@
+package UserManagement;
+
+import java.io.BufferedReader;
+import java.io.FileReader;
+import java.io.IOException;
+import javax.servlet.ServletException;
+import javax.servlet.annotation.WebServlet;
+import javax.servlet.http.HttpServlet;
+import javax.servlet.http.HttpServletRequest;
+import javax.servlet.http.HttpServletResponse;
+import javax.servlet.http.HttpSession;
+import org.mindrot.jbcrypt.BCrypt;
+
+// Abstract User class to define common user behavior (Abstraction)
+abstract class User {
+    protected String username;
+    protected String email;
+    protected String city;
+    protected String nic;
+
+    public User(String username, String email, String city, String nic) {
+        this.username = username;
+        this.email = email;
+        this.city = city;
+        this.nic = nic;
+    }
+
+    // Encapsulation: Getters for user properties
+    public String getUsername() { return username; }
+    public String getEmail() { return email; }
+    public String getCity() { return city; }
+    public String getNic() { return nic; }
+
+    // Abstract method to determine user type (Abstraction)
+    public abstract boolean isAdmin();
+    public abstract String getRedirectPage();
+}
+
+// Regular User class inheriting from User
+class RegularUser extends User {
+    public RegularUser(String username, String email, String city, String nic) {
+        super(username, email, city, nic);
+    }
+
+    @Override
+    public boolean isAdmin() {
+        return false;
+    }
+
+    @Override
+    public String getRedirectPage() {
+        return "index.jsp";
+    }
+}
+
+// AdminUser class inheriting from User (Inheritance)
+class AdminUser extends User {
+    private static final String ADMIN_EMAIL = "admin@gmail.com";
+    private static final String ADMIN_PASSWORD_HASH = "$2a$10$rMYISwxff.smNhOuMdtr0uoxFAU8/hafewJJ874e6wypQY1PvpvLa";
+
+    public AdminUser(String username, String email, String city, String nic) {
+        super(username, email, city, nic);
+    }
+
+    // Check if the user matches admin credentials
+    public static boolean isAdminCredentials(String email, String password) {
+        return email.trim().toLowerCase().equals(ADMIN_EMAIL.toLowerCase()) &&
+                BCrypt.checkpw(password, ADMIN_PASSWORD_HASH);
+    }
+
+    @Override
+    public boolean isAdmin() {
+        return true;
+    }
+
+    @Override
+    public String getRedirectPage() {
+        return "AdminDashboard.jsp";
+    }
+}
+
+@WebServlet("/loginServlet")
+public class LoginServlet extends HttpServlet {
+    private static final String FILE_PATH = "/Users/samadhithjayasena/Library/CloudStorage/OneDrive-SriLankaInstituteofInformationTechnology/IntelliJ IDEA/Website/src/main/resources/users.txt";
+
+    @Override
+    protected void doPost(HttpServletRequest request, HttpServletResponse response) throws ServletException, IOException {
+        response.setContentType("text/html;charset=UTF-8");
+
+        String email = request.getParameter("email");
+        String password = request.getParameter("password");
+        String formType = request.getParameter("formType");
+
+        request.setAttribute("formType", formType);
+
+        if (isEmpty(email) || isEmpty(password)) {
+            request.setAttribute("errorMessage", "Email and password are required!");
+            request.getRequestDispatcher("Login.jsp").forward(request, response);
+            return;
+        }
+
+        System.out.println("LoginServlet: Attempting login with Email = " + email + ", Password = " + password);
+
+        User authenticatedUser = authenticateUser(email, password);
+
+        if (authenticatedUser != null) {
+            HttpSession session = request.getSession();
+            session.setAttribute("username", authenticatedUser.getUsername());
+            session.setAttribute("email", authenticatedUser.getEmail());
+            session.setAttribute("city", authenticatedUser.getCity());
+            session.setAttribute("nic", authenticatedUser.getNic());
+            session.setAttribute("isAdmin", authenticatedUser.isAdmin());
+
+            // Redirect based on user type
+            response.sendRedirect(authenticatedUser.getRedirectPage());
+        } else {
+            request.setAttribute("errorMessage", "Invalid email or password!");
+            request.getRequestDispatcher("Login.jsp").forward(request, response);
+        }
+    }
+
+    private boolean isEmpty(String value) {
+        return value == null || value.trim().isEmpty();
+    }
+
+    private User authenticateUser(String email, String password) {
+        // First, check if the credentials match the admin
+        if (AdminUser.isAdminCredentials(email, password)) {
+            // Hardcoded admin details from the provided credentials
+            return new AdminUser("Website Admin", "admin@gmail.com", "Kurunegala", "AD000000");
+        }
+
+        // If not admin, check regular users from the file
+        try (BufferedReader reader = new BufferedReader(new FileReader(FILE_PATH))) {
+            String line;
+            while ((line = reader.readLine()) != null) {
+                System.out.println("LoginServlet: Reading line = " + line);
+                String[] userData = line.split(" \\| ");
+                if (userData.length == 5) {
+                    String storedUsername = userData[0].trim();
+                    String storedEmail = userData[1].trim();
+                    String storedHashedPassword = userData[2].trim();
+                    String storedCity = userData[3].trim();
+                    String storedNic = userData[4].trim();
+
+                    System.out.println("LoginServlet: Stored Email = " + storedEmail + ", Stored Password = " + storedHashedPassword);
+
+                    if (!storedHashedPassword.startsWith("$2a$") && !storedHashedPassword.startsWith("$2b$")) {
+                        System.out.println("LoginServlet: Invalid BCrypt hash format for user " + storedEmail);
+                        continue;
+                    }
+
+                    if (email.trim().toLowerCase().equals(storedEmail.toLowerCase())) {
+                        try {
+                            if (BCrypt.checkpw(password, storedHashedPassword)) {
+                                System.out.println("LoginServlet: Password match for user " + storedEmail);
+                                return new RegularUser(storedUsername, storedEmail, storedCity, storedNic);
+                            } else {
+                                System.out.println("LoginServlet: Password does not match for user " + storedEmail);
+                            }
+                        } catch (IllegalArgumentException e) {
+                            System.out.println("LoginServlet: BCrypt error for user " + storedEmail + ": " + e.getMessage());
+                            continue;
+                        }
+                    }
+                } else {
+                    System.out.println("LoginServlet: Invalid line format: " + line);
+                }
+            }
+        } catch (IOException e) {
+            System.err.println("Error reading user data: " + e.getMessage());
+        }
+        System.out.println("LoginServlet: No matching user found for email " + email);
+        return null;
+    }
+}
+
+package UserManagement;
+
+import java.io.BufferedReader;
+import java.io.FileReader;
+import java.io.IOException;
+import javax.servlet.ServletException;
+import javax.servlet.annotation.WebServlet;
+import javax.servlet.http.HttpServlet;
+import javax.servlet.http.HttpServletRequest;
+import javax.servlet.http.HttpServletResponse;
+import javax.servlet.http.HttpSession;
+import org.mindrot.jbcrypt.BCrypt;
+
+@WebServlet("/loginServlet")
+public class LoginServlet extends HttpServlet {
+
+    @Override
+    protected void doPost(HttpServletRequest request, HttpServletResponse response) throws ServletException, IOException {
+        response.setContentType("text/html;charset=UTF-8");
+
+        String email = request.getParameter("email");
+        String password = request.getParameter("password");
+        String formType = request.getParameter("formType");
+
+        request.setAttribute("formType", formType);
+
+        if (isEmpty(email) || isEmpty(password)) {
+            request.setAttribute("errorMessage", "Email and password are required!");
+            request.getRequestDispatcher("Login.jsp").forward(request, response);
+            return;
+        }
+
+        System.out.println("LoginServlet: Attempting login with Email = " + email + ", Password = " + password); // Debugging
+
+        User authenticatedUser = authenticateUser(email, password);
+
+        if (authenticatedUser != null) {
+            HttpSession session = request.getSession();
+            session.setAttribute("username", authenticatedUser.username);
+            session.setAttribute("email", authenticatedUser.email);
+            session.setAttribute("city", authenticatedUser.city);
+            session.setAttribute("nic", authenticatedUser.nic);
+            response.sendRedirect("index.jsp");
+        } else {
+            request.setAttribute("errorMessage", "Invalid email or password!");
+            request.getRequestDispatcher("Login.jsp").forward(request, response);
+        }
+    }
+
+    private boolean isEmpty(String value) {
+        return value == null || value.trim().isEmpty();
+    }
+
+    private User authenticateUser(String email, String password) {
+        try (BufferedReader reader = new BufferedReader(new FileReader(Constants.FILE_PATH))) {
+            String line;
+            while ((line = reader.readLine()) != null) {
+                System.out.println("LoginServlet: Reading line = " + line); // Debugging
+                String[] userData = line.split(" \\| ");
+                if (userData.length == 5) { // Updated to expect 5 fields
+                    String storedUsername = userData[0].trim();
+                    String storedEmail = userData[1].trim();
+                    String storedHashedPassword = userData[2].trim();
+                    String storedCity = userData[3].trim();
+                    String storedNic = userData[4].trim();
+
+                    System.out.println("LoginServlet: Stored Email = " + storedEmail + ", Stored Password = " + storedHashedPassword + ", Stored City = " + storedCity + ", Stored NIC = " + storedNic); // Debugging
+
+                    // Check if the stored password is a valid BCrypt hash
+                    if (!storedHashedPassword.startsWith("$2a$") && !storedHashedPassword.startsWith("$2b$")) {
+                        System.out.println("LoginServlet: Invalid BCrypt hash format for user " + storedEmail);
+                        continue;
+                    }
+
+                    // Case-insensitive email comparison
+                    if (email.trim().toLowerCase().equals(storedEmail.toLowerCase())) {
+                        try {
+                            if (BCrypt.checkpw(password, storedHashedPassword)) {
+                                System.out.println("LoginServlet: Password match for user " + storedEmail);
+                                return new User(storedUsername, storedEmail, storedCity, storedNic);
+                            } else {
+                                System.out.println("LoginServlet: Password does not match for user " + storedEmail);
+                            }
+                        } catch (IllegalArgumentException e) {
+                            System.out.println("LoginServlet: BCrypt error for user " + storedEmail + ": " + e.getMessage());
+                            continue;
+                        }
+                    }
+                } else {
+                    System.out.println("LoginServlet: Invalid line format: " + line);
+                }
+            }
+        } catch (IOException e) {
+            System.err.println("Error reading user data: " + e.getMessage());
+        }
+        System.out.println("LoginServlet: No matching user found for email " + email);
+        return null;
+    }
+
+    private static class User {
+        String username;
+        String email;
+        String city;
+        String nic;
+
+        User(String username, String email, String city, String nic) {
+            this.username = username;
+            this.email = email;
+            this.city = city;
+            this.nic = nic;
+        }
+    }
+}
