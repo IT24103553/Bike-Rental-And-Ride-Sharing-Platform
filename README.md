@@ -1,1 +1,0 @@
-# Bike-Rental-And-Ride-Sharing-Platform
